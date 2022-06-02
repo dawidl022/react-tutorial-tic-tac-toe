@@ -56,7 +56,7 @@ const Board: FC<BoardProps> = props => {
 };
 
 class Game extends React.Component {
-  state: { history: History; xIsNext: boolean };
+  state: { history: History; xIsNext: boolean; stepNumber: number };
 
   constructor(props: {}) {
     super(props);
@@ -66,13 +66,14 @@ class Game extends React.Component {
           squares: Array(9).fill(null),
         },
       ],
+      stepNumber: 0,
       xIsNext: true,
     };
   }
 
   get current(): Snapshot {
     const history = this.state.history;
-    return history[history.length - 1];
+    return history[this.state.stepNumber];
   }
 
   handleClick(i: number) {
@@ -80,14 +81,16 @@ class Game extends React.Component {
     if (this.calculateWinner(squares) || squares[i] != null) {
       return;
     }
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
 
     squares[i] = this.state.xIsNext ? 'X' : 'O';
     this.setState({
-      history: this.state.history.concat([
+      history: history.concat([
         {
           squares: squares,
         },
       ]),
+      stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
     });
   }
@@ -120,8 +123,25 @@ class Game extends React.Component {
     return squares.filter(s => s != null).length === 9;
   }
 
+  jumpTo(move: number) {
+    this.setState({
+      stepNumber: move,
+      xIsNext: move % 2 === 0,
+    });
+  }
+
   render() {
     const winner = this.calculateWinner(this.current.squares);
+
+    const moves = this.state.history.map((_, moveIndex) => {
+      const desc =
+        moveIndex == 0 ? 'Go to game start' : `Go to move #${moveIndex}`;
+      return (
+        <li key={moveIndex}>
+          <button onClick={() => this.jumpTo(moveIndex)}>{desc}</button>
+        </li>
+      );
+    });
 
     const status = winner
       ? `Winner: ${winner}`
@@ -139,7 +159,7 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{/* TODO */}</ol>
+          <ol>{moves}</ol>
         </div>
       </div>
     );
